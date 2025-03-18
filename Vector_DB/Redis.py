@@ -1,10 +1,9 @@
-import ollama
 import redis
 import numpy as np
 from redis.commands.search.query import Query
 from sentence_transformers import SentenceTransformer
+from preprocess import extract_text_from_pdf, split_text_into_chunks, get_embedding
 import os
-import fitz
 
 # ----------------------
 # Initialize Redis connection
@@ -45,13 +44,6 @@ def create_hnsw_index():
 # Embedding Generation
 # ----------------------
 
-# Generate an embedding using nomic-embed-text
-def get_embedding(text: str, model: str = "nomic-embed-text") -> list:
-
-    response = ollama.embeddings(model=model, prompt=text)
-    return response["embedding"]
-
-
 # store the embedding in Redis
 def store_embedding(file: str, page: str, chunk: str, embedding: list):
     key = f"{DOC_PREFIX}:{file}_page_{page}_chunk_{chunk}"
@@ -66,35 +58,6 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list):
             ).tobytes(),  # Store as byte array
         },
     )
-
-
-# extract the text from a PDF by page
-def extract_text_from_pdf(pdf_path):
-    """Extract text from a PDF file."""
-    doc = fitz.open(pdf_path)
-    text_by_page = []
-    for page_num, page in enumerate(doc):
-        text_by_page.append((page_num, page.get_text()))
-    return text_by_page
-
-
-# split the text into chunks with overlap
-def split_text_into_chunks(text, chunk_size=100, overlap=50):
-    """
-    Turn the text into chunks given the size and overlap
-    
-    chunk_size: the # of tokens per chunk (int)
-    overlap: the # of tokens to overlap between chunks (int)
-
-    """
-
-    words = text.split()
-    chunks = []
-    for i in range(0, len(words), chunk_size - overlap):
-        chunk = " ".join(words[i : i + chunk_size])
-        chunks.append(chunk)
-    return chunks
-
 
 # Process all PDF files in a given directory
 def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
@@ -158,11 +121,8 @@ def query_redis(query_text: str):
     res = redis_client.ft(INDEX_NAME).search(
         q, query_params={"vec": np.array(embedding, dtype=np.float32).tobytes()}
     )
-
-    for doc in res.docs:
-        print(f"{doc.id} \n ----> {doc.vector_distance}\n")
-
-
+    
+    return res.docs[0].id
 
 
 

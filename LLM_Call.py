@@ -2,7 +2,7 @@ import ollama
 
 
 # Get Ollama Running 
-def local_LLM_call(query, model):
+def local_LLM_call(query, model, top_embedding):
     '''
     Create a call to the local LLM using the given query and specified model.
 
@@ -10,9 +10,21 @@ def local_LLM_call(query, model):
     model: the name of the ollama specific model being used (str)
     '''
 
+    input = f'''
+
+        You are a helpful assistant that can answer questions about the following text:
+        {top_embedding}
+
+        You are also given a question:
+        {query}
+
+        Answer the question based on the text.
+        
+    '''
+
     # Generate response using Ollama
     response = ollama.chat(
-        model=model, messages=[{"role": "user", "content": query}]
+        model=model, messages=[{"role": "user", "content": input}]
     )
 
     print(response["message"]["content"])

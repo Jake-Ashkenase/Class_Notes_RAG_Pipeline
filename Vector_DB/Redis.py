@@ -87,7 +87,7 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
                     )
             print(f" -----> Processed {file_name}")
 
-def index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
+def redis_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
     '''
     This function will clear the redis store, create a new HNSW index, and process all documents
     in the data directory. 

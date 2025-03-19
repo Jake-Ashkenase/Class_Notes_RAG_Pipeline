@@ -15,22 +15,16 @@ INDEX_NAME = "embedding_index"
 # clear anything stored in the current chroma store
 def clear_chroma_store():
     print("Clearing the existing Chroma store")
-    client.reset()
-    print("Chroma store cleared.")
+    try:
+        # Try to delete the existing collection
+        client.delete_collection(INDEX_NAME)
+    except chromadb.errors.NotFoundError:
+        # Collection doesn't exist, which is fine
+        pass
+    print("Chroma store cleared.") 
 
 # Create a chroma index
 def create_chroma_index():
-    try:
-        # Get the existing collection
-        collection = client.get_collection(INDEX_NAME)
-
-        # Get all document IDs and delete them
-        all_ids = collection.get()['ids']
-        if all_ids:
-            collection.delete(ids=all_ids)
-    except ValueError:
-        pass
-
     collection = client.create_collection(INDEX_NAME)
     print("Index created successfully.")
 
@@ -86,7 +80,7 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
 
 
 
-def index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
+def chroma_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
     '''
     This function will clear the redis store, create a new HNSW index, and process all documents
     in the data directory. 
@@ -101,17 +95,22 @@ def index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model
     create_chroma_index()
 
     process_pdfs(data_dir, chunk_size, overlap, embedding_model)
-    print("\n---Done processing PDFs---\n")
 
 
-def query_chroma(query_text: str):
+def query_chroma(query_text: str, embedding_model="nomic-embed-text"):
 
     collection = client.get_collection(INDEX_NAME)
+    query_embedding = get_embedding(query_text, embedding_model)
 
     results = collection.query(
-        query_texts=query_text,
-        n_results=1
+        query_embeddings=[query_embedding],
+        include=["documents", 'distances'],
+        n_results=5
     )
 
     return results
     
+
+
+
+

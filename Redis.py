@@ -1,7 +1,6 @@
 import redis
 import numpy as np
 from redis.commands.search.query import Query
-from sentence_transformers import SentenceTransformer
 from preprocess import extract_text_from_pdf, split_text_into_chunks, get_embedding
 import os
 
@@ -123,6 +122,3 @@ def query_redis(query_text: str):
     )
     
     return res.docs[0].id
-
-
-

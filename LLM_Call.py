@@ -1,6 +1,5 @@
 import ollama
 
-
 # Get Ollama Running 
 def local_LLM_call(query, model, top_embedding):
     '''

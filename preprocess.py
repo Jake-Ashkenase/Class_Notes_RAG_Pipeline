@@ -1,20 +1,11 @@
 import fitz
 import ollama
-from sentence_transformers import SentenceTransformer
-
-# Load SentenceTransformer models once
-transformer_models = {
-    "all-MiniLM-L6-v2": SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2"),
-    "all-mpnet-base-v2": SentenceTransformer("sentence-transformers/all-mpnet-base-v2"),
-}
 
 # Generate an embedding based on the selected model
 def get_embedding(text: str, model: str = "nomic-embed-text") -> list:
-    if model == "nomic-embed-text":
+    if model in ["nomic-embed-text", "mxbai-embed-large"]:
         response = ollama.embeddings(model=model, prompt=text)
         return response["embedding"]
-    elif model in transformer_models:
-        return transformer_models[model].encode(text).tolist()
     else:
         raise ValueError(f"Unsupported embedding model: {model}")
 

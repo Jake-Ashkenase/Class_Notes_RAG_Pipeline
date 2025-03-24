@@ -10,7 +10,7 @@ def main(query):
      
 
     # # index the data
-    redis_index_pipeline("data", 100, 50, "nomic-embed-text")
+    # redis_index_pipeline("data", 100, 50, "nomic-embed-text")
     # chroma_index_pipeline("data", 100, 50, "nomic-embed-text")
 
     # Retrieval 
@@ -22,5 +22,5 @@ def main(query):
 
 
 if __name__ == "__main__":
-    main("How do I add one to all entries in a feild for MongoDB")
+    main("What does the $nin operator mean in a Mongo query?")
 

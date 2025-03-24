@@ -6,7 +6,7 @@ from Redis import query_redis
 
 def main():
     # Index the data
-    redis_index_pipeline("data", 100, 50, "nomic-embed-text")
+    # redis_index_pipeline("data", 100, 50, "nomic-embed-text")
     # chroma_index_pipeline("data", 100, 50, "nomic-embed-text")
 
     # Get user query from terminal

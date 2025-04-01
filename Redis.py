@@ -122,3 +122,22 @@ def query_redis(query_text: str):
     )
     
     return res.docs[0].id
+
+def get_all_documents():
+    """Retrieve all documents from Redis store.
+    
+    specifically for the BM25 Search
+    """
+    results = []
+    for key in redis_client.keys(f"{DOC_PREFIX}:*"):
+        doc = redis_client.hgetall(key)
+        if doc:
+            # Skip the embedding field as it's not needed for BM25
+            results.append({
+                "text": doc[b'chunk'].decode('utf-8'),  # The actual text content
+                "metadata": {
+                    "file": doc[b'file'].decode('utf-8'),
+                    "page": doc[b'page'].decode('utf-8')
+                }
+            })
+    return results

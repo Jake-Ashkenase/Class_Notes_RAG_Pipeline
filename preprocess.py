@@ -1,9 +1,11 @@
-import fitz
-import ollama
+import fitz  # for PDF parsing
+import ollama  # for local embedding model calls
 
-# Generate an embedding based on the selected model
+# Generate an embedding using supported Ollama models
 def get_embedding(text: str, model: str = "nomic-embed-text") -> list:
-    if model in ["nomic-embed-text", "mxbai-embed-large"]:
+    supported_models = ["nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed"]
+
+    if model in supported_models:
         response = ollama.embeddings(model=model, prompt=text)
         return response["embedding"]
     else:
@@ -11,7 +13,7 @@ def get_embedding(text: str, model: str = "nomic-embed-text") -> list:
 
 # Extract the text from a PDF by page
 def extract_text_from_pdf(pdf_path):
-    """Extract text from a PDF file."""
+    """Extract text from a PDF file, returning a list of (page_num, text)."""
     doc = fitz.open(pdf_path)
     text_by_page = []
     for page_num, page in enumerate(doc):

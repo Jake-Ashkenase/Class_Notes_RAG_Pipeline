@@ -1,0 +1,3 @@
+When was NoSQL first used?
+Show me an example of what a JSON Object might look like
+What are the benefits of using transactions in relational database systems?

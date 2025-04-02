@@ -77,3 +77,14 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
                         embedding=embedding,
                     )
             print(f" -----> Processed {file_name}")
+
+# Query Chroma
+def query_chroma(query_text: str, embedding_model: str = "nomic-embed-text"):
+    embedding = get_embedding(query_text, embedding_model)
+
+    collection = client.get_collection(INDEX_NAME)
+    results = collection.query(
+        query_embeddings=[embedding],
+        n_results=1
+    )
+    return results['metadatas'][0]['text']

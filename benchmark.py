@@ -1,56 +1,99 @@
 import time
-from Vector_DB.qdrant import qdrant_index_pipeline, query_qdrant
-from Vector_DB.Redis import redis_index_pipeline, query_redis
-from Vector_DB.Chroma import process_pdfs as chroma_process_pdfs, clear_chroma_store, create_chroma_index
-from Vector_DB.Chroma import query_chroma
-from LLM_Call import local_LLM_call
+import psutil
 import csv
+from LLM_Call import local_LLM_call
+from preprocess import get_embedding
+from Vector_DB import Redis, Chroma, qdrant
 
-# csv store
-csv_file = open("benchmark_results.csv", "w", newline="")
-csv_writer = csv.writer(csv_file)
-csv_writer.writerow(["DB", "Embedding Model", "Chunk Size", "Overlap", "LLM", "Time (s)"])
+sample_questions = [
+    "When was NoSQL first used? in 20 words.",
+    "Show me an example of what a JSON Object might look like in 20 words.",
+    "What are the benefits of using transactions in relational database systems? in 20 words."
+]
 
-# Parameters
-chunk_sizes = [200, 500, 1000]
-overlaps = [0, 50, 100]
-embedding_models = ["nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed"]
-vector_dbs = ["redis", "qdrant", "chroma"]
-llm_models = ["llama3:latest", "mistral:latest"]  # add more if needed
-sample_question = "What is a vector database?"
+VECTOR_DB_PIPELINES = {
+    "redis": (Redis.redis_index_pipeline, Redis.query_redis),
+    "chroma": (Chroma.process_pdfs, Chroma.query_chroma),
+    "qdrant": (qdrant.qdrant_index_pipeline, qdrant.query_qdrant),
+}
 
-data_dir = "data"  # path to your PDFs
+EMBEDDING_MODELS = ["nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed"]
+LLM_MODELS = ["llama3.2:latest", "mistral:latest"]
 
-# Benchmark function
-def run_benchmark():
-    for chunk_size in chunk_sizes:
-        for overlap in overlaps:
-            for embed_model in embedding_models:
-                for db in vector_dbs:
-                    for llm in llm_models:
-                        print(f"\n===== Testing: {db}, {embed_model}, chunk={chunk_size}, overlap={overlap}, LLM={llm} =====")
-                        start = time.time()
+FIXED_CHUNK_SIZE = 100
+FIXED_OVERLAP = 50
 
-                        if db == "redis":
-                            redis_index_pipeline(data_dir, chunk_size, overlap, embed_model)
-                            top_embedding = query_redis(sample_question)
-                        elif db == "qdrant":
-                            qdrant_index_pipeline(data_dir, chunk_size, overlap, embed_model)
-                            top_embedding = query_qdrant(sample_question, embed_model)
-                        elif db == "chroma":
-                            clear_chroma_store()
-                            create_chroma_index()
-                            chroma_process_pdfs(data_dir, chunk_size, overlap, embed_model)
-                            top_embedding = query_chroma(sample_question, embed_model)
+CSV_PATH = "benchmark_vector_all.csv"
+csv_fields = [
+    "vector_db", "embedding_model", "chunk_size", "overlap",
+    "llm_model", "index_time_sec", "memory_mb",
+    "retrieval_time_sec", "llm_response_time_sec"
+]
 
-                        end = time.time()
-                        print(f"Index + Query time: {end - start:.2f}s")
+def get_memory_usage():
+    process = psutil.Process()
+    return process.memory_info().rss / (1024 ** 2)
 
-                        csv_writer.writerow([db, embed_model, chunk_size, overlap, llm, round(end - start, 2)])
+def write_result_csv(row):
+    file_exists = False
+    try:
+        with open(CSV_PATH, "r", encoding="utf-8") as f:
+            file_exists = True
+    except FileNotFoundError:
+        pass
 
-                        print("\n--- LLM Response ---")
-                        local_LLM_call(sample_question, llm, top_embedding)
+    with open(CSV_PATH, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=csv_fields)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
 
+def run_full_benchmark():
+    for vector_db, (index_func, query_func) in VECTOR_DB_PIPELINES.items():
+        for embedding_model in EMBEDDING_MODELS:
+            print(f"\n🔄 Indexing with {vector_db.upper()} | {embedding_model}")
+
+            mem_before = get_memory_usage()
+            start_time = time.time()
+
+            # Indexing
+            index_func("data", FIXED_CHUNK_SIZE, FIXED_OVERLAP, embedding_model)
+
+            index_time = time.time() - start_time
+            mem_after = get_memory_usage()
+
+            for llm_model in LLM_MODELS:
+                for question in sample_questions:
+                    try:
+                        retrieval_start = time.time()
+                        if vector_db == "redis":
+                            top_context = query_func(question)
+                        else:
+                            top_context = query_func(question, embedding_model)
+                        retrieval_time = time.time() - retrieval_start
+
+                        if top_context is None:
+                            print(f"[!] No result for {question} using {vector_db}/{embedding_model}")
+                            continue
+
+                        llm_start = time.time()
+                        response = local_LLM_call(question, llm_model, top_context)
+                        llm_time = time.time() - llm_start
+
+                        write_result_csv({
+                            "vector_db": vector_db,
+                            "embedding_model": embedding_model,
+                            "chunk_size": FIXED_CHUNK_SIZE,
+                            "overlap": FIXED_OVERLAP,
+                            "llm_model": llm_model,
+                            "index_time_sec": round(index_time, 2),
+                            "memory_mb": round(mem_after - mem_before, 2),
+                            "retrieval_time_sec": round(retrieval_time, 2),
+                            "llm_response_time_sec": round(llm_time, 2),
+                        })
+
+                    except Exception as e:
+                        print(f"[!] Error with {vector_db}/{embedding_model}/{llm_model} - {e}")
 
 if __name__ == "__main__":
-    run_benchmark()
+    run_full_benchmark()

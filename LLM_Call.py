@@ -20,10 +20,8 @@ def local_LLM_call(query, model, top_embedding):
         Answer the question based on the text.
         
     '''
-
-    # Generate response using Ollama
     response = ollama.chat(
         model=model, messages=[{"role": "user", "content": input}]
     )
 
-    print(response["message"]["content"])
+    return response["message"]["content"]

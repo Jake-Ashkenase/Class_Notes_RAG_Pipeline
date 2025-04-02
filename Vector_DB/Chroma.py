@@ -79,6 +79,23 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
             print(f" -----> Processed {file_name}")
 
 
+def chroma_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
+    '''
+    This function will clear the redis store, create a new HNSW index, and process all documents
+    in the data directory. 
+
+    data_dir: the directory containing the pdf's (str)
+    chunk_size: the # of tokens per chunk (int)
+    overlap: the # of tokens to overlap between chunks (int)
+    embedding_model: the model to use for embedding (str)
+    
+    '''
+    clear_chroma_store()
+    create_chroma_index()
+
+    process_pdfs(data_dir, chunk_size, overlap, embedding_model)
+
+
 # Query Chroma
 def query_chroma(query_text: str, embedding_model: str = "nomic-embed-text"):
     embedding = get_embedding(query_text, embedding_model)

@@ -33,19 +33,18 @@ def create_chroma_index():
 # Embedding Generation
 # ----------------------
 
-def store_embedding(file: str, page: str, chunk: str, embedding: list):
-    # Create a unique ID for the document
+def store_embedding(file: str, page: str, chunk: str, embedding: list, original_text: str):
     doc_id = f"{file}_page_{page}_chunk_{chunk}"
     
     collection = client.get_collection(INDEX_NAME)
 
-    # Store the embedding with its metadata
     collection.add(
-        embeddings=[embedding],  # ChromaDB expects a list of embeddings
+        embeddings=[embedding],
         metadatas=[{
             "file": file,
             "page": page,
-            "chunk": chunk
+            "chunk": chunk,
+            "text": original_text  # 👈 Add this line
         }],
         ids=[doc_id]
     )
@@ -75,6 +74,7 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
                         page=str(page_num),
                         chunk=str(chunk),
                         embedding=embedding,
+                        original_text=chunk
                     )
             print(f" -----> Processed {file_name}")
 
@@ -103,6 +103,14 @@ def query_chroma(query_text: str, embedding_model: str = "nomic-embed-text"):
     collection = client.get_collection(INDEX_NAME)
     results = collection.query(
         query_embeddings=[embedding],
-        n_results=1
+        n_results=1,
+        include=["metadatas", "documents"]  # Include both metadata and documents
     )
-    return results['metadatas'][0]['text']
+
+    # Return either from metadata (if exists) or from documents
+    if results["metadatas"] and results["metadatas"][0] and "text" in results["metadatas"][0][0]:
+        return results["metadatas"][0][0]["text"]
+    elif results["documents"]:  # Fallback to documents if text not in metadata
+        return results["documents"][0][0]
+    else:
+        return ""  # Return empty string if nothing found

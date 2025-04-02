@@ -120,6 +120,10 @@ def query_redis(query_text: str):
     res = redis_client.ft(INDEX_NAME).search(
         q, query_params={"vec": np.array(embedding, dtype=np.float32).tobytes()}
     )
+
+    # Return empty string if no results found
+    if not res.docs:
+        return ""
     
     return res.docs[0].id
 

@@ -13,8 +13,8 @@ sample_questions = [
 
 VECTOR_DB_PIPELINES = {
     "redis": (Redis.redis_index_pipeline, Redis.query_redis),
-    "chroma": (Chroma.process_pdfs, Chroma.query_chroma),
-    "qdrant": (qdrant.qdrant_index_pipeline, qdrant.query_qdrant),
+    #"chroma": (Chroma.process_pdfs, Chroma.query_chroma),
+    #"qdrant": (qdrant.qdrant_index_pipeline, qdrant.query_qdrant),
 }
 
 EMBEDDING_MODELS = ["nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed"]

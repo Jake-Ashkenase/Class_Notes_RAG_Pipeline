@@ -3,39 +3,48 @@ import os
 from preprocess import extract_text_from_pdf, split_text_into_chunks, get_embedding
 
 client = chromadb.HttpClient(
-    host="localhost",  # Change this to your desired host
-    port=6378,        # Change this to your desired port
-    ssl=False         # Set to True if using HTTPS
+    host="localhost",
+    port=6378,
+    ssl=False
 )
 
-DISTANCE_METRIC = "COSINE"
+DISTANCE_METRIC = "cosine"
 INDEX_NAME = "embedding_index"
 
+# -------------------------
+# Embedding Model Dimension Mapping
+# -------------------------
+EMBEDDING_DIM_MAP = {
+    "nomic-embed-text": 768,
+    "mxbai-embed-large": 1024,
+    "snowflake-arctic-embed": 1024,
+}
 
-# clear anything stored in the current chroma store
+# -------------------------
+# Clear and Create Collection
+# -------------------------
+
 def clear_chroma_store():
     print("Clearing the existing Chroma store")
     try:
-        # Try to delete the existing collection
         client.delete_collection(INDEX_NAME)
     except chromadb.errors.NotFoundError:
-        # Collection doesn't exist, which is fine
         pass
-    print("Chroma store cleared.") 
+    print("Chroma store cleared.")
 
-# Create a chroma index
-def create_chroma_index():
-    collection = client.create_collection(INDEX_NAME)
-    print("Index created successfully.")
+def create_chroma_index(embedding_dim: int):
+    collection = client.create_collection(
+        name=INDEX_NAME,
+        metadata={"hnsw:space": DISTANCE_METRIC}
+    )
+    print(f"Chroma index created with dimension {embedding_dim}")
 
-
-# ----------------------
-# Embedding Generation
-# ----------------------
+# -------------------------
+# Store Embeddings
+# -------------------------
 
 def store_embedding(file: str, page: str, chunk: str, embedding: list, original_text: str):
     doc_id = f"{file}_page_{page}_chunk_{chunk}"
-    
     collection = client.get_collection(INDEX_NAME)
 
     collection.add(
@@ -44,22 +53,27 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list, original_
             "file": file,
             "page": page,
             "chunk": chunk,
-            "text": original_text  # 👈 Add this line
+            "text": original_text
         }],
         ids=[doc_id]
     )
 
-# Process all PDF files in a given directory
+# -------------------------
+# PDF Processing Pipeline
+# -------------------------
+
 def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
     '''
-    Go through all pdf's in the data directory and process them
-
-    data_dir: the directory containing the pdf's (str)
-    chunk_size: the # of tokens per chunk (int)
-    overlap: the # of tokens to overlap between chunks (int)
-    embedding_model: the model to use for embedding (str)
-    
+    Process all PDFs in the data directory and add them to Chroma with the correct index dimension.
     '''
+    clear_chroma_store()
+
+    # Get expected dimension
+    embedding_dim = EMBEDDING_DIM_MAP.get(embedding_model)
+    if embedding_dim is None:
+        raise ValueError(f"Unknown embedding model: {embedding_model}")
+
+    create_chroma_index(embedding_dim)
 
     for file_name in os.listdir(data_dir):
         if file_name.endswith(".pdf"):
@@ -72,14 +86,16 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
                     store_embedding(
                         file=file_name,
                         page=str(page_num),
-                        chunk=str(chunk),
+                        chunk=str(chunk_index),
                         embedding=embedding,
                         original_text=chunk
                     )
             print(f" -----> Processed {file_name}")
 
-
+# -------------------------
 # Query Chroma
+# -------------------------
+
 def query_chroma(query_text: str, embedding_model: str = "nomic-embed-text"):
     embedding = get_embedding(query_text, embedding_model)
 
@@ -87,13 +103,12 @@ def query_chroma(query_text: str, embedding_model: str = "nomic-embed-text"):
     results = collection.query(
         query_embeddings=[embedding],
         n_results=1,
-        include=["metadatas", "documents"]  # Include both metadata and documents
+        include=["metadatas", "documents"]
     )
 
-    # Return either from metadata (if exists) or from documents
     if results["metadatas"] and results["metadatas"][0] and "text" in results["metadatas"][0][0]:
         return results["metadatas"][0][0]["text"]
-    elif results["documents"]:  # Fallback to documents if text not in metadata
+    elif results["documents"]:
         return results["documents"][0][0]
     else:
-        return ""  # Return empty string if nothing found
+        return ""

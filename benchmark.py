@@ -18,6 +18,7 @@ VECTOR_DB_PIPELINES = {
 }
 
 EMBEDDING_MODELS = ["nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed"]
+#EMBEDDING_MODELS = ["snowflake-arctic-embed"]
 LLM_MODELS = ["llama3.2:latest", "mistral:latest"]
 
 FIXED_CHUNK_SIZE = 100
@@ -66,10 +67,8 @@ def run_full_benchmark():
                 for question in sample_questions:
                     try:
                         retrieval_start = time.time()
-                        if vector_db == "redis":
-                            top_context = query_func(question)
-                        else:
-                            top_context = query_func(question, embedding_model)
+                        # ✅ always pass embedding_model, no matter the DB
+                        top_context = query_func(question, embedding_model)
                         retrieval_time = time.time() - retrieval_start
 
                         if top_context is None:

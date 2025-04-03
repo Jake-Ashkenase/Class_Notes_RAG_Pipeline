@@ -4,6 +4,7 @@ from redis.commands.search.query import Query
 from preprocess import extract_text_from_pdf, split_text_into_chunks, get_embedding
 import os
 
+
 # ----------------------
 # Initialize Redis connection
 # ----------------------
@@ -42,22 +43,6 @@ def clear_redis_store():
     redis_client.flushdb()
     print("Redis store cleared.")
 
-# Create an HNSW index in Redis
-def create_hnsw_index():
-    try:
-        redis_client.execute_command(f"FT.DROPINDEX {INDEX_NAME} DD")
-    except redis.exceptions.ResponseError:
-        pass
-
-    redis_client.execute_command(
-        f"""
-        FT.CREATE {INDEX_NAME} ON HASH PREFIX 1 {DOC_PREFIX}
-        SCHEMA text TEXT
-        embedding VECTOR HNSW 6 DIM {VECTOR_DIM} TYPE FLOAT32 DISTANCE_METRIC {DISTANCE_METRIC}
-        """
-    )
-    print("Index created successfully.")
-
 
 # ----------------------
 # Embedding Generation
@@ -79,7 +64,7 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list):
     )
 
 # Process all PDF files in a given directory
-def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
+def process_pdfs(data_dir, chunk_size=500, overlap=100, embedding_model="nomic-embed-text"):
     '''
     Go through all pdf's in the data directory and process them
 
@@ -124,13 +109,14 @@ def query_redis(query_text: str, embedding_model: str = None):
         .return_fields("id", "vector_distance")
         .dialect(2)
     )
-    embedding = get_embedding(query_text)
+
+    embedding = get_embedding(query_text, embedding_model)  # ✅ Fix here
     res = redis_client.ft(INDEX_NAME).search(
         q, query_params={"vec": np.array(embedding, dtype=np.float32).tobytes()}
     )
 
     if not res.docs:
-        return None  # Or return some default fallback text
+        return None
     return res.docs[0].id
 
 

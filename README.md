@@ -1,4 +1,4 @@
-# DS4300 - Spring 2025 - Practical #2
+# DS4300 Practical 02 — Local RAG Pipeline
 
 Group: Class_Notes_RAG_Pipeline
 
@@ -6,19 +6,10 @@ Jake Ashkenase: ashkenase.j@northeastern.edu
 Benjamin Rice: rice.be@northeastern.edu
 Markus Zaba: zaba.m@northeastern.edu
 
-# DS4300 Practical 02 — Local RAG Pipeline
+## Overview
 
-This project implements a local Retrieval-Augmented Generation (RAG) system that allows users to query course notes through a combination of vector databases, embedding models, and local LLMs. It benchmarks multiple configurations and supports interactive querying through the command line.
+This project implements a local Retrieval-Augmented Generation (RAG) system that allows users to query a collection of DS4300 course notes using locally hosted vector databases and language models. The goal was to evaluate how different components—vector stores, embedding models, and LLMs—impact retrieval accuracy and response quality. Our strategy involved building a modular pipeline to ingest and chunk documents, index them with multiple vector databases, generate embeddings with various models, and benchmark responses using different local LLMs through Ollama.
 
-## Objective
-
-The goal of this project is to:
-- Ingest course notes in PDF format
-- Chunk the text and generate embeddings
-- Store and retrieve these embeddings using vector databases
-- Query the system with natural language questions
-- Use a local LLM to answer questions based on retrieved context
-- Benchmark performance of the system under various configurations
 
 ## Vector Databases Used
 

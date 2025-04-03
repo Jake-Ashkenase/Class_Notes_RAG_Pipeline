@@ -9,11 +9,21 @@ def local_LLM_call(query, model, top_embedding, system_prompt):
     model: the name of the ollama specific model being used (str)
     '''
 
-    input = system_prompt
+    input = f'''
+
+        You are a helpful assistant that can answer questions about the following text:
+        {top_embedding}
+
+        You are also given a question:
+        {query}
+
+        Answer the question based on the text.
+        
+    '''
 
     # Generate response using Ollama
     response = ollama.chat(
         model=model, messages=[{"role": "user", "content": input}]
     )
 
-    print(response["message"]["content"])
+    return response["message"]["content"]

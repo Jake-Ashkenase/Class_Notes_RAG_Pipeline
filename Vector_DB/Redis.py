@@ -4,13 +4,34 @@ from redis.commands.search.query import Query
 from preprocess import extract_text_from_pdf, split_text_into_chunks, get_embedding
 import os
 
+
 # ----------------------
 # Initialize Redis connection
 # ----------------------
 
 redis_client = redis.Redis(host="localhost", port=6379, db=0)
 
-VECTOR_DIM = 768
+EMBEDDING_DIM_MAP = {
+    "nomic-embed-text": 768,
+    "mxbai-embed-large": 1024,
+    "snowflake-arctic-embed": 1024,
+}
+
+def create_hnsw_index(embedding_model: str):
+    dim = EMBEDDING_DIM_MAP[embedding_model]
+    try:
+        redis_client.execute_command(f"FT.DROPINDEX {INDEX_NAME} DD")
+    except redis.exceptions.ResponseError:
+        pass
+
+    redis_client.execute_command(
+        f"""
+        FT.CREATE {INDEX_NAME} ON HASH PREFIX 1 {DOC_PREFIX}
+        SCHEMA text TEXT
+        embedding VECTOR HNSW 6 DIM {dim} TYPE FLOAT32 DISTANCE_METRIC {DISTANCE_METRIC}
+        """
+    )
+    print(f"Redis index created with dimension {dim}")
 INDEX_NAME = "embedding_index"
 DOC_PREFIX = "doc:"
 DISTANCE_METRIC = "COSINE"
@@ -21,22 +42,6 @@ def clear_redis_store():
     print("Clearing the existing Redis store")
     redis_client.flushdb()
     print("Redis store cleared.")
-
-# Create an HNSW index in Redis
-def create_hnsw_index():
-    try:
-        redis_client.execute_command(f"FT.DROPINDEX {INDEX_NAME} DD")
-    except redis.exceptions.ResponseError:
-        pass
-
-    redis_client.execute_command(
-        f"""
-        FT.CREATE {INDEX_NAME} ON HASH PREFIX 1 {DOC_PREFIX}
-        SCHEMA text TEXT
-        embedding VECTOR HNSW 6 DIM {VECTOR_DIM} TYPE FLOAT32 DISTANCE_METRIC {DISTANCE_METRIC}
-        """
-    )
-    print("Index created successfully.")
 
 
 # ----------------------
@@ -59,7 +64,7 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list):
     )
 
 # Process all PDF files in a given directory
-def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
+def process_pdfs(data_dir, chunk_size=500, overlap=100, embedding_model="nomic-embed-text"):
     '''
     Go through all pdf's in the data directory and process them
 
@@ -87,45 +92,40 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
             print(f" -----> Processed {file_name}")
 
 def redis_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
-    '''
-    This function will clear the redis store, create a new HNSW index, and process all documents
-    in the data directory. 
-
-    data_dir: the directory containing the pdf's (str)
-    chunk_size: the # of tokens per chunk (int)
-    overlap: the # of tokens to overlap between chunks (int)
-    embedding_model: the model to use for embedding (str)
-    
-    '''
     clear_redis_store()
-    create_hnsw_index()
-
+    create_hnsw_index(embedding_model)
     process_pdfs(data_dir, chunk_size, overlap, embedding_model)
     print("\n---Done processing PDFs---\n")
-
 
 # ----------------------
 # Query the Redis store
 # ----------------------
 
 
-def query_redis(query_text: str):
+def query_redis(query_text: str, embedding_model: str = None):
     q = (
         Query("*=>[KNN 5 @embedding $vec AS vector_distance]")
         .sort_by("vector_distance")
         .return_fields("id", "vector_distance")
         .dialect(2)
     )
-    embedding = get_embedding(query_text)
+
+    embedding = get_embedding(query_text, embedding_model)  # ✅ Fix here
     res = redis_client.ft(INDEX_NAME).search(
         q, query_params={"vec": np.array(embedding, dtype=np.float32).tobytes()}
     )
 
+<<<<<<< HEAD
     # Return empty string if no results found
     if not res.docs:
         return ""
     
+=======
+    if not res.docs:
+        return None
+>>>>>>> bb4
     return res.docs[0].id
+
 
 def get_all_documents():
     """Retrieve all documents from Redis store.

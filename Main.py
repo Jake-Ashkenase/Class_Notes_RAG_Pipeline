@@ -1,5 +1,5 @@
 from LLM_Call import local_LLM_call
-from Redis import redis_index_pipeline, query_redis, get_all_documents
+from Vector_DB.Redis import redis_index_pipeline, query_redis, get_all_documents
 from BM25 import BM25
 import numpy as np
 #from Chroma import chroma_index_pipeline
@@ -86,7 +86,7 @@ def main():
     # ----------------------------------------------------------
 
     # Call the LLM with the fused result
-    local_LLM_call(query, "llama3.2:latest", top_result["text"])
+    local_LLM_call(query, "llama3:latest", top_result["text"])
 
 if __name__ == "__main__":
     main()

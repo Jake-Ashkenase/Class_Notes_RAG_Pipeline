@@ -1,3 +1,0 @@
-DB,Embedding Model,Chunk Size,Overlap,LLM,Time (s)
-redis,nomic-embed-text,200,0,llama3:latest,64.29
-redis,nomic-embed-text,200,0,mistral:latest,65.4

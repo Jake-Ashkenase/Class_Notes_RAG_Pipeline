@@ -1,3 +1,3 @@
-When was NoSQL first used?
-Show me an example of what a JSON Object might look like
-What are the benefits of using transactions in relational database systems?
+When was NoSQL first used? in 20 words. 
+Show me an example of what a JSON Object might look like in 20 words.
+What are the benefits of using transactions in relational database systems? in 20 words. 

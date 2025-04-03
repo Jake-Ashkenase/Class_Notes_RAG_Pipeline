@@ -40,10 +40,10 @@ To run Redis with vector search:
 docker run -p 6379:6379 redis/redis-stack-server
 ```
 
-To install Chroma (runs in Python, no container needed):
+To install Chroma or run the docker container:
 
 ```
-pip install chromadb
+docker run -p 6378:8000 ghcr.io/chroma-core/chroma
 ```
 
 To run Qdrant:
@@ -54,7 +54,7 @@ docker run -p 6333:6333 qdrant/qdrant
 
 ### Ollama Setup (for Embeddings and LLMs)
 
-Install and start Ollama locally:
+Install and start Ollama locally if not already have:
 
 ```
 curl -fsSL https://ollama.com/install.sh | sh
@@ -109,6 +109,8 @@ python benchmark.py
 
 This will create a file called:
 
+(Note: the combination of a chunksize:500 and overlay:100 for snowflake may not work since snowflake on certain devices can't withstand that chunksize)
+
 ```
 benchmark_vector_all.csv
 ```
@@ -128,6 +130,8 @@ To run the system in a manual query mode:
 ```
 python Main.py
 ```
+
+This is how we queried it with our customer questions along with gathered unique resposne and data from select response variables we found from our benchmarking data. 
 
 This will:
 - Index the course notes

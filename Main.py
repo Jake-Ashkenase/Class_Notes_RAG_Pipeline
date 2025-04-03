@@ -86,7 +86,7 @@ def main():
     # ----------------------------------------------------------
 
     # Call the LLM with the fused result
-    local_LLM_call(query, "llama3:latest", top_result["text"])
+    local_LLM_call(query, "llama3.2:latest", top_result["text"])
 
 if __name__ == "__main__":
     main()

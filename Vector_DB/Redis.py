@@ -64,7 +64,7 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list):
     )
 
 # Process all PDF files in a given directory
-def process_pdfs(data_dir, chunk_size=500, overlap=100, embedding_model="nomic-embed-text"):
+def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
     '''
     Go through all pdf's in the data directory and process them
 
@@ -115,15 +115,8 @@ def query_redis(query_text: str, embedding_model: str = None):
         q, query_params={"vec": np.array(embedding, dtype=np.float32).tobytes()}
     )
 
-<<<<<<< HEAD
-    # Return empty string if no results found
-    if not res.docs:
-        return ""
-    
-=======
     if not res.docs:
         return None
->>>>>>> bb4
     return res.docs[0].id
 
 

@@ -13,12 +13,11 @@ sample_questions = [
 
 VECTOR_DB_PIPELINES = {
     "redis": (Redis.redis_index_pipeline, Redis.query_redis),
-    #"chroma": (Chroma.process_pdfs, Chroma.query_chroma),
-    #"qdrant": (qdrant.qdrant_index_pipeline, qdrant.query_qdrant),
+    "chroma": (Chroma.process_pdfs, Chroma.query_chroma),
+    "qdrant": (qdrant.qdrant_index_pipeline, qdrant.query_qdrant),
 }
 
 EMBEDDING_MODELS = ["nomic-embed-text", "mxbai-embed-large", "snowflake-arctic-embed"]
-#EMBEDDING_MODELS = ["snowflake-arctic-embed"]
 LLM_MODELS = ["llama3.2:latest", "mistral:latest"]
 
 FIXED_CHUNK_SIZE = 100
@@ -67,13 +66,8 @@ def run_full_benchmark():
                 for question in sample_questions:
                     try:
                         retrieval_start = time.time()
-                        # ✅ always pass embedding_model, no matter the DB
                         top_context = query_func(question, embedding_model)
                         retrieval_time = time.time() - retrieval_start
-
-                        if top_context is None:
-                            print(f"[!] No result for {question} using {vector_db}/{embedding_model}")
-                            continue
 
                         llm_start = time.time()
                         response = local_LLM_call(question, llm_model, top_context)

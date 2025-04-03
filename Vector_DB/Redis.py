@@ -4,11 +4,7 @@ from redis.commands.search.query import Query
 from preprocess import extract_text_from_pdf, split_text_into_chunks, get_embedding
 import os
 
-
-# ----------------------
-# Initialize Redis connection
-# ----------------------
-
+# initialize redis connection
 redis_client = redis.Redis(host="localhost", port=6379, db=0)
 
 EMBEDDING_DIM_MAP = {
@@ -34,6 +30,7 @@ def create_hnsw_index(embedding_model: str):
     print(f"Redis index created with dimension {dim}")
 INDEX_NAME = "embedding_index"
 DOC_PREFIX = "doc:"
+# but cosine works here???? what
 DISTANCE_METRIC = "COSINE"
 
 
@@ -42,11 +39,6 @@ def clear_redis_store():
     print("Clearing the existing Redis store")
     redis_client.flushdb()
     print("Redis store cleared.")
-
-
-# ----------------------
-# Embedding Generation
-# ----------------------
 
 # store the embedding in Redis
 def store_embedding(file: str, page: str, chunk: str, embedding: list):
@@ -59,7 +51,7 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list):
             "chunk": chunk,
             "embedding": np.array(
                 embedding, dtype=np.float32
-            ).tobytes(),  # Store as byte array
+            ).tobytes(),  
         },
     )
 
@@ -95,11 +87,6 @@ def redis_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding
     clear_redis_store()
     create_hnsw_index(embedding_model)
     process_pdfs(data_dir, chunk_size, overlap, embedding_model)
-    print("\n---Done processing PDFs---\n")
-
-# ----------------------
-# Query the Redis store
-# ----------------------
 
 
 def query_redis(query_text: str, embedding_model: str = None):
@@ -110,7 +97,7 @@ def query_redis(query_text: str, embedding_model: str = None):
         .dialect(2)
     )
 
-    embedding = get_embedding(query_text, embedding_model)  # ✅ Fix here
+    embedding = get_embedding(query_text, embedding_model) 
     res = redis_client.ft(INDEX_NAME).search(
         q, query_params={"vec": np.array(embedding, dtype=np.float32).tobytes()}
     )
@@ -131,7 +118,7 @@ def get_all_documents():
         if doc:
             # Skip the embedding field as it's not needed for BM25
             results.append({
-                "text": doc[b'chunk'].decode('utf-8'),  # The actual text content
+                "text": doc[b'chunk'].decode('utf-8'), 
                 "metadata": {
                     "file": doc[b'file'].decode('utf-8'),
                     "page": doc[b'page'].decode('utf-8')

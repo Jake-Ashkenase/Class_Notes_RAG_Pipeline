@@ -16,17 +16,12 @@ EMBEDDING_DIM_MAP = {
 COLLECTION_NAME = "ds4300_embeddings"
 client = QdrantClient(host="localhost", port=6333)
 
-# -------------------------
-# Clear Qdrant Collection
-# -------------------------
 def clear_qdrant_store():
     print("Clearing Qdrant collection...")
     if COLLECTION_NAME in client.get_collections().collections:
         client.delete_collection(COLLECTION_NAME)
 
-# -------------------------
-# Create Qdrant Collection
-# -------------------------
+# qdrnt collection 
 def create_qdrant_index(embedding_model: str):
     dim = EMBEDDING_DIM_MAP.get(embedding_model)
     if dim is None:
@@ -38,9 +33,6 @@ def create_qdrant_index(embedding_model: str):
     )
     print(f"Qdrant collection created with dimension {dim}")
 
-# -------------------------
-# Store Embedding
-# -------------------------
 def store_embedding(file: str, page: str, chunk: str, embedding: list, original_text: str, point_id: int):
     metadata = {
         "file": file,
@@ -57,9 +49,7 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list, original_
 
     client.upsert(collection_name=COLLECTION_NAME, points=[point])
 
-# -------------------------
-# Process PDFs
-# -------------------------
+#preprocess call
 def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
     point_id = 0
     for file_name in os.listdir(data_dir):
@@ -81,18 +71,12 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
                     point_id += 1
             print(f" -----> Processed {file_name}")
 
-# -------------------------
-# Index Pipeline
-# -------------------------
 def qdrant_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
     clear_qdrant_store()
     create_qdrant_index(embedding_model)
     process_pdfs(data_dir, chunk_size, overlap, embedding_model)
     print(f"\n✅ Qdrant indexing complete with model: {embedding_model}\n")
 
-# -------------------------
-# Query Qdrant
-# -------------------------
 def query_qdrant(query_text: str, embedding_model: str = "nomic-embed-text"):
     embedding = get_embedding(query_text, embedding_model)
     results = client.search(

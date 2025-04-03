@@ -76,8 +76,6 @@ def main():
     # response = local_LLM_call(query, llm_model, qdrant_top_embedding)
     llm_time = time.time() - llm_start
     mem_after = get_memory_usage()
-
-    print("\n🧠 Response:\n")
     print(response)
 
     write_to_csv({

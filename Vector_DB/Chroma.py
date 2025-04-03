@@ -8,21 +8,15 @@ client = chromadb.HttpClient(
     ssl=False
 )
 
+# check this idk why cosine isnt working - ask fontenot
 DISTANCE_METRIC = "cosine"
 INDEX_NAME = "embedding_index"
 
-# -------------------------
-# Embedding Model Dimension Mapping
-# -------------------------
 EMBEDDING_DIM_MAP = {
     "nomic-embed-text": 768,
     "mxbai-embed-large": 1024,
     "snowflake-arctic-embed": 1024,
 }
-
-# -------------------------
-# Clear and Create Collection
-# -------------------------
 
 def clear_chroma_store():
     print("Clearing the existing Chroma store")
@@ -39,9 +33,6 @@ def create_chroma_index(embedding_dim: int):
     )
     print(f"Chroma index created with dimension {embedding_dim}")
 
-# -------------------------
-# Store Embeddings
-# -------------------------
 
 def store_embedding(file: str, page: str, chunk: str, embedding: list, original_text: str):
     doc_id = f"{file}_page_{page}_chunk_{chunk}"
@@ -57,10 +48,6 @@ def store_embedding(file: str, page: str, chunk: str, embedding: list, original_
         }],
         ids=[doc_id]
     )
-
-# -------------------------
-# PDF Processing Pipeline
-# -------------------------
 
 def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-embed-text"):
     '''
@@ -97,10 +84,6 @@ def chroma_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embeddin
     clear_chroma_store()
     create_chroma_index(embedding_model)
     process_pdfs(data_dir, chunk_size, overlap, embedding_model)
-    print(f"\n✅ Chroma indexing complete with model: {embedding_model}\n")
-
-# Query Chroma
-# -------------------------
 
 def query_chroma(query_text: str, embedding_model: str = "nomic-embed-text"):
     embedding = get_embedding(query_text, embedding_model)

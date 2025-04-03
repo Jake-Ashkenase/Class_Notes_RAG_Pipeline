@@ -93,6 +93,12 @@ def process_pdfs(data_dir, chunk_size=100, overlap=50, embedding_model="nomic-em
             print(f" -----> Processed {file_name}")
 
 
+def chroma_index_pipeline(data_dir: str, chunk_size: int, overlap: int, embedding_model: str):
+    clear_chroma_store()
+    create_chroma_index(embedding_model)
+    process_pdfs(data_dir, chunk_size, overlap, embedding_model)
+    print(f"\n✅ Chroma indexing complete with model: {embedding_model}\n")
+
 # Query Chroma
 # -------------------------
 

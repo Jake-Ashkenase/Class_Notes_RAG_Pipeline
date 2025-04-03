@@ -1,27 +1,25 @@
 import ollama
 
-# Get Ollama Running 
-def local_LLM_call(query, model, top_embedding, system_prompt):
+def local_LLM_call(query, model, top_embedding, system_prompt=None):
     '''
     Create a call to the local LLM using the given query and specified model.
-
-    query: the final query that is being passed to the LLM(str) 
-    model: the name of the ollama specific model being used (str)
     '''
+
+    if system_prompt is None:
+        system_prompt = "You are a helpful assistant that answers questions about database systems using the retrieved context below."
 
     input = f'''
+{system_prompt}
 
-        You are a helpful assistant that can answer questions about the following text:
-        {top_embedding}
+Retrieved Context:
+{top_embedding}
 
-        You are also given a question:
-        {query}
+Question:
+{query}
 
-        Answer the question based on the text.
-        
-    '''
+Answer the question based on the context above.
+'''
 
-    # Generate response using Ollama
     response = ollama.chat(
         model=model, messages=[{"role": "user", "content": input}]
     )
